@@ -120,6 +120,7 @@ class DistributedDataParallelWrapper(nn.Module):
         """
         inputs, kwargs = self.scatter(inputs, kwargs,
                                       [torch.cuda.current_device()])
+        torch.cuda.empty_cache()
         output = self.module.train_step(*inputs[0], **kwargs[0])
         return output
 

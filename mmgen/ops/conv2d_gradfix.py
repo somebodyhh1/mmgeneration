@@ -175,6 +175,7 @@ def _conv2d_gradfix(transpose, weight_shape, stride, padding, output_padding,
 
             # General case => cuDNN.
             if transpose:
+                torch.cuda.empty_cache()
                 return torch.nn.functional.conv_transpose2d(
                     input=input,
                     weight=weight,
@@ -204,7 +205,9 @@ def _conv2d_gradfix(transpose, weight_shape, stride, padding, output_padding,
                 assert grad_input.shape == input_shape
 
             if ctx.needs_input_grad[1] and not weight_gradients_disabled:
+                
                 grad_weight = Conv2dGradWeight.apply(grad_output, input)
+                
                 assert grad_weight.shape == weight_shape
 
             if ctx.needs_input_grad[2]:
@@ -247,9 +250,25 @@ def _conv2d_gradfix(transpose, weight_shape, stride, padding, output_padding,
                 torch.backends.cudnn.deterministic,
                 torch.backends.cudnn.allow_tf32
             ]
+
+            #刘敬宇 修改
+            '''
+            empty_weight = torch.empty(weight_shape,
+                            dtype=input.dtype, 
+                            layout=input.layout, 
+                            device=input.device)
+            output_mask=[0,1,0]
+            return torch.ops.aten.convolution_backward(grad_output,input,empty_weight,
+                                                    None,stride,padding,dilation,transpose,
+                                                    output_padding,groups,output_mask)[1]
+            '''
+
+            
             return torch._C._jit_get_operation(name)(weight_shape, grad_output,
                                                      input, padding, stride,
                                                      dilation, groups, *flags)
+            
+
 
         @staticmethod
         def backward(ctx, grad2_grad_weight):

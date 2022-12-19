@@ -429,7 +429,7 @@ class NoiseInjection(nn.Module):
         noise = noise.to(image.dtype)
         if return_noise:
             return image + self.weight.to(image.dtype) * noise, noise
-
+        torch.cuda.empty_cache()
         return image + self.weight.to(image.dtype) * noise
 
 

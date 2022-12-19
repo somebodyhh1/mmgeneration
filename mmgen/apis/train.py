@@ -42,6 +42,8 @@ def train_model(model,
                 validate=False,
                 timestamp=None,
                 meta=None):
+    #刘敬宇修改
+    #torch.cuda.set_device(2)
     logger = get_root_logger(cfg.log_level)
 
     # prepare data loaders
@@ -56,7 +58,6 @@ def train_model(model,
         dist=distributed,
         persistent_workers=cfg.data.get('persistent_workers', False),
         seed=cfg.seed)
-
     # The overall dataloader settings
     loader_cfg.update({
         k: v
@@ -65,7 +66,6 @@ def train_model(model,
             'test_dataloader'
         ]
     })
-
     # The specific datalaoder settings
     train_loader_cfg = {**loader_cfg, **cfg.data.get('train_dataloader', {})}
 
@@ -93,12 +93,13 @@ def train_model(model,
         _use_apex_amp = True
 
     # put model on gpus
-
+    
     if distributed:
         find_unused_parameters = cfg.get('find_unused_parameters', False)
         use_ddp_wrapper = cfg.get('use_ddp_wrapper', False)
         # Sets the `find_unused_parameters` parameter in
         # torch.nn.parallel.DistributedDataParallel
+        #刘敬宇修改
         if use_ddp_wrapper:
             mmcv.print_log('Use DDP Wrapper.', 'mmgen')
             model = DistributedDataParallelWrapper(
@@ -114,7 +115,6 @@ def train_model(model,
                 find_unused_parameters=find_unused_parameters)
     else:
         model = MMDataParallel(model, device_ids=cfg.gpu_ids)
-
     # allow users to define the runner
     if cfg.get('runner', None):
         runner = build_runner(
@@ -158,7 +158,6 @@ def train_model(model,
     if cfg.checkpoint_config is not None:
         cfg.checkpoint_config['out_dir'] = os.path.join(
             cfg.work_dir, cfg.checkpoint_config.get('out_dir', 'ckpt'))
-
     # register hooks
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config,
@@ -204,4 +203,5 @@ def train_model(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
+    torch.cuda.empty_cache()
     runner.run(data_loaders, cfg.workflow, cfg.total_iters)

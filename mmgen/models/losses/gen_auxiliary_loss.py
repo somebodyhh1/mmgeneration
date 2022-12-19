@@ -105,8 +105,11 @@ def gen_path_regularizer(generator,
             grad_outputs=torch.ones(()).to(fake_img),
             create_graph=True,
             retain_graph=True,
-            only_inputs=True)[0]
-
+            only_inputs=True,
+            allow_unused=True)[0]
+    #刘敬宇修改
+    if(grad==None):
+        return None,None,None
     path_lengths = torch.sqrt(grad.pow(2).sum(2).mean(1))
     # update mean path
     path_mean = mean_path_length + decay * (

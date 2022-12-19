@@ -178,6 +178,8 @@ class DynamicIterBasedRunner(IterBasedRunner):
         """
         for hook in self._hooks:
             if hasattr(hook, fn_name):
+                #刘敬宇修改
+                #print(type(getattr(hook, fn_name)))
                 getattr(hook, fn_name)(self)
 
     def train(self, data_loader, **kwargs):
@@ -211,7 +213,7 @@ class DynamicIterBasedRunner(IterBasedRunner):
 
         if self.use_apex_amp:
             kwargs.update(dict(use_apex_amp=True))
-
+        torch.cuda.empty_cache()
         outputs = self.model.train_step(data_batch, self.optimizer, **kwargs)
 
         # the loss scaler should be updated after ``train_step``
@@ -233,6 +235,7 @@ class DynamicIterBasedRunner(IterBasedRunner):
         if 'log_vars' in outputs:
             self.log_buffer.update(outputs['log_vars'], outputs['num_samples'])
         self.outputs = outputs
+        torch.cuda.empty_cache()
         self.call_hook('after_train_iter')
         self._inner_iter += 1
         self._iter += 1
@@ -271,6 +274,7 @@ class DynamicIterBasedRunner(IterBasedRunner):
         self.call_hook('before_epoch')
 
         while self.iter < self._max_iters:
+            print("self.iter==",self.iter,self._max_iters)
             for i, flow in enumerate(workflow):
                 self._inner_iter = 0
                 mode, iters = flow
@@ -282,6 +286,7 @@ class DynamicIterBasedRunner(IterBasedRunner):
                 for _ in range(iters):
                     if mode == 'train' and self.iter >= self._max_iters:
                         break
+                    torch.cuda.empty_cache()
                     iter_runner(iter_loaders[i], **kwargs)
 
         time.sleep(1)  # wait for some hooks like loggers to finish

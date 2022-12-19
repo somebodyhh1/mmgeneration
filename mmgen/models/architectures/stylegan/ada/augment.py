@@ -575,6 +575,7 @@ class AugmentPipe(torch.nn.Module):
             grid = torch.nn.functional.affine_grid(
                 theta=G_inv[:, :2, :], size=shape, align_corners=False)
             images = grid_sample_gradfix.grid_sample(images, grid)
+            #images=torch.nn.functional.grid_sample(images,grid,align_corners=False)
 
             # Downsample and crop.
             images = upfirdn2d.downsample2d(
